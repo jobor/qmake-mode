@@ -402,27 +402,6 @@
     )
   )
 
-
-
-
-
-
-
-;;Creating Menu
-(define-key-after
-  global-map
-  [menu-bar qmake-menu]
-  (cons "Qmake" (make-sparse-keymap "hoot hoot"))
-  'tools )
-
-;; Creating a menu item
-(define-key
-  global-map
-  [menu-bar qmake-menu compile]
-  '("compile" . qmake-compile))
-
-
-
 ;; code to remove the whole menu panel
 ;;(global-unset-key [menu-bar qmake-menu])
 (defun qmake-compile()
