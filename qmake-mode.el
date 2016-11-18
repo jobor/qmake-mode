@@ -413,15 +413,11 @@
 		new-table)
   "Syntax table for qmake-mode.")
 
-
-
-
-
 (define-derived-mode qmake-mode fundamental-mode
-  "Major mode for qmake files (Qt)"
+  "Major mode for qmake project files"
   :syntax-table qmake-mode-syntax-table
   (setq font-lock-defaults '(qmake-key-words))
-  (setq mode-name "qmake mode")
+  (setq mode-name "qmake")
   (set (make-local-variable 'indent-line-function) 'qmake-ident-line)
   (set (make-local-variable 'comment-start) "# ")
 )
