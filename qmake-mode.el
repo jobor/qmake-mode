@@ -402,9 +402,7 @@
       )
 
 
-(add-to-list 'auto-mode-alist '("\\.pro\\'" . qmake-mode))
-
-
+(add-to-list 'auto-mode-alist '("\\.pr\\(o\\|i\\|f\\)\\'" . qmake-mode))
 
 (defvar qmake-mode-syntax-table
   (let ((new-table (make-syntax-table)))
