@@ -434,50 +434,25 @@
   )
 )
 
-
-(defun qmake-calculate-indentation()
-   "This fucntion calculates the indentation for the "
+(cl-defun qmake-calculate-indentation()
+   "This function calculates the indentation for the current line"
    (beginning-of-line)
+   (if (bobp)
+       (return-from qmake-calculate-indentation 0))
+   (let ((prev-indent (get-prev-line-indent)))
+     (case (qmake--prev-line-type)
+       ((opening-curly-bracket
+         scope-continuation)
+        (return-from qmake-calculate-indentation (+ prev-indent qmake-indent-width)))
+       ((scope-continuation-end)
+        (return-from qmake-calculate-indentation (- prev-indent qmake-indent-width))))
 
-   (let (
-         (new-indent (get-prev-line-indent))
-         ( prev-indent (get-prev-line-indent) )
-         )
+     ;; If the current line is a } closing bracket,
+     ;; remove identation width
+     (if (looking-at "[ \t]*}")
+         (return-from qmake-calculate-indentation (- prev-indent qmake-indent-width)))
 
-     ;; If we are at the start of the line
-     ;; there is no indentation.
-     (if (bobp)
-         0
-       ;; Check if the previous line is a {
-       ;; In that case add on a new indent width...
-       (if (is-prev-curly-forward)
-           (setq new-indent (+ prev-indent qmake-indent-width))
-         )
-       ;; If the current line is a } closing bracket,
-       ;; remove identation width
-       (if (looking-at "[ \t]*}")
-           (setq new-indent (- prev-indent qmake-indent-width))
-        )
-
-
-       )
-
-
-     (if (> 0 new-indent)
-         (progn
-           (message "Damn %d" new-indent)
-           0)
-       (progn
-         (message "indent %d" new-indent)
-         new-indent)
-       )
-     )
-   )
-
-
-
-
-
+     prev-indent))
 
 (defun get-prev-line-indent()
   "Gets the previous line indentation"
@@ -491,27 +466,24 @@
     )
   )
 
+(defun qmake--looking-at-scope-continuation ()
+  "Check if we're looking-at a scope continuation, e.g. \"isEmpty(FOO): \\\"."
+  (looking-at ".*:[[:space:]]*\\\\[[:space:]]*\\(#.*\\)?$"))
 
-
-
-
-
-(defun is-prev-curly-forward()
-  "Checks if the previous line contains a curly bracket, that is \"{\" "
+(cl-defun qmake--prev-line-type ()
+  "Check if the previous line opens a new block with \"{\" or \": \\\".
+Takes comments into account."
   (interactive)
-  (beginning-of-line)
-  (forward-line -1)
-  (if (looking-at "[ \t]*\\(}[a-z]*\\|\\([a-z]*\\)\\((.+,.+)\\|(.+)\\|(.+,.+,.+)\\)\\|\\)[ \t]*{")
-      (progn
-        (message "Curly forward")
-        (forward-line 1)
-        t)
-    (progn
-      (message "Ingen bracket")
-      (forward-line 1)
-      nil)
-    )
-  )
+  (save-excursion
+    (beginning-of-line)
+    (previous-line)
+    (if (looking-at ".*{[[:space:]]*\\(#.*\\)?$")
+        (return-from qmake--prev-line-type 'opening-curly-bracket))
+    (if (qmake--looking-at-scope-continuation)
+        (return-from qmake--prev-line-type 'scope-continuation))
+    (previous-line)
+    (if (qmake--looking-at-scope-continuation)
+        (return-from qmake--prev-line-type 'scope-continuation-end))))
 
 ;; code to remove the whole menu panel
 ;;(global-unset-key [menu-bar qmake-menu])
