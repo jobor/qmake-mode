@@ -405,10 +405,11 @@
 (add-to-list 'auto-mode-alist '("\\.pr\\(o\\|i\\|f\\)\\'" . qmake-mode))
 
 (defvar qmake-mode-syntax-table
-  (let ((new-table (make-syntax-table)))
-		(modify-syntax-entry ?# "<" new-table)
-		(modify-syntax-entry ?\n ">" new-table)
-		new-table)
+  (let ((table (make-syntax-table)))
+    (modify-syntax-entry ?# "<" table)
+    (modify-syntax-entry ?\n ">" table)
+    (modify-syntax-entry ?$ "'" table)
+    table)
   "Syntax table for qmake-mode.")
 
 (define-derived-mode qmake-mode fundamental-mode
