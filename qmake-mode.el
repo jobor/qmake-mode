@@ -58,13 +58,13 @@
 ;;-------------------------------------------------------
 (provide 'qmake-mode)
 
+(defvar qmake-indent-width 4
+  "Indentation width for qmake-mode")
 
 ;;-------------------------------------------------------
 ;; There is no more user defined variables under this line.
 ;;-------------------------------------------------------
 (defvar qmake-mode-hook nil)
-
-(setq qmake-indent-width 4)
 
 (defvar qmake-functions-variables
   '("absolute_path"
