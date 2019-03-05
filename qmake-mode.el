@@ -58,24 +58,11 @@
 ;;-------------------------------------------------------
 (provide 'qmake-mode)
 
-;; User define variable, set to which qmake to use also add 
-;; possible arguments for qmake.
-;; To set it use M-x set-variable <ret> qmake-command-str 
-;; <ret> "/usr/local/bin/qmake"
-(defvar qmake-command-str "qmake -Wall"
-  "*This variable will set the  qmake whereabout and options for compiling"
-  )
-
-
 
 ;;-------------------------------------------------------
 ;; There is no more user defined variables under this line.
 ;;-------------------------------------------------------
 (defvar qmake-mode-hook nil)
-
-(defface qmake-face-platform
-      '((t (:foreground "#190eef")))
-      "Blue")
 
 (setq qmake-indent-width 4)
 
@@ -387,11 +374,8 @@
 (defvar qmake-functions-regexp (regexp-opt qmake-functions-variables 'words))
 (defvar qmake-variables-regexp (regexp-opt qmake-variables 'words))
 
-
 (setq qmake-functions-variables nil)
-(setq  qmake-variables nil)
-
-
+(setq qmake-variables nil)
 
 (setq qmake-key-words
       (list
@@ -485,138 +469,3 @@ Takes comments into account."
     (previous-line)
     (if (qmake--looking-at-scope-continuation)
         (return-from qmake--prev-line-type 'scope-continuation-end))))
-
-;; code to remove the whole menu panel
-;;(global-unset-key [menu-bar qmake-menu])
-(defun qmake-compile()
-  "Testing compile"
-  (interactive)
-  (let (
-        (file-name (buffer-file-name))
-        (cur-buffer (buffer-name))
-        (line-number-list ())
-        (first-error nil)
-        )
-    (progn 
-      (shell-command (concat qmake-command-str " " file-name))
-      (switch-to-buffer-other-window "*Shell Command Output*")
-      (qmake-highlight-error)
-      ;;Need to check wheter car returns nil
-      (setq first-error (car (qmake-compile-search-for-errors)))
-      (if first-error
-          (progn
-           (goto-char first-error)
-           (setq line-number-list (qmake-compile-get-line-nr-from-error))
-           (switch-to-buffer-other-window cur-buffer)
-           (goto-line (car line-number-list))
-           )
-        (progn
-          (delete-windows-on "*Shell Command Output*")
-          (message "Compiled successfully")
-          )
-        
-      )
-    )
-  )
-)
-  
-
-
-
-
-
-(defun qmake-compile-search-for-errors()
-  "interactive"
-  (interactive)
-  (goto-char (point-min))
-  (let (
-        (my-point (search-forward-regexp ":[0-9]*:" (point-max) t))
-        (qmake-compile-error-points ())
-        )
-    (while (integerp my-point)
-      (progn 
-        (push my-point qmake-compile-error-points)
-        (goto-char my-point)
-        (setq my-point (search-forward-regexp ":[0-9]*:" (point-max) t))
-        )
-      )
-    qmake-compile-error-points
-    )
-  )
-
-
-
-
-(defun qmake-highlight-error()
-  "Highlight error in the compile buffer"
-  (save-excursion)
-  (highlight-regexp ":[0-9]*:")
-  
-  )
-
-
-;; The basic idea is to jump to the line number of error
-
-(defun qmake-compile-get-line-nr-from-error()
-  "reads the number for which the compilation has failed and returns a list
-   on this"
-  (interactive)
-  (goto-char (point-min))
-  (let (
-        (point-list (qmake-compile-list-error))
-        (line-nr-list ())
-        ( current-point )
-        )
-    (while (> (length point-list) 0)
-      (setq current-point (pop point-list))
-      (goto-char current-point)
-      (push (qmake-compile-error-line-nr current-point) line-nr-list)
-      )
-    line-nr-list
-    )
-  )
-
-
-
-(defun qmake-compile-list-error()
-  "Search through the buffer after compile errors, 
-   it then returns a list of these points"
-  (let (
-        (my-point (search-forward-regexp ":[0-9]*:" (point-max) t))
-        (error-points ())
-        )
-    (while (integerp my-point)
-      (progn 
-        (push my-point error-points)
-        (goto-char my-point)
-        (setq my-point (search-forward-regexp ":[0-9]*:" (point-max) t))
-        )
-      )
-    error-points
-    )
-  )
-
-
-(defun qmake-compile-error-line-nr(current-pos)
-  "Returns the number for which the error occured while compiling
-   For example asdha/asdas:19: 
-                              ^- Current-pos (after search-forward-regexp)
-   Will return number 19"
-  (let (
-        (start-of-line (progn
-                         (goto-char current-pos)
-                         (move-to-column 0)
-                         (point)
-                         )
-                       )
-        (error-line-text nil)
-        (st-error-point nil)
-        (end-error-point nil)
-        )
-    (progn 
-      (setq error-line-text (buffer-substring-no-properties start-of-line current-pos))
-      (setq st-error-point (+ (+ (string-match ":[0-9]+" error-line-text) 1) start-of-line))
-      (string-to-number (buffer-substring-no-properties st-error-point  current-pos))
-      )
-    )
-  )
