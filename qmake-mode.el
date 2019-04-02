@@ -401,71 +401,89 @@
   :syntax-table qmake-mode-syntax-table
   (setq font-lock-defaults '(qmake-key-words))
   (setq mode-name "qmake")
-  (set (make-local-variable 'indent-line-function) 'qmake-ident-line)
+  (set (make-local-variable 'indent-line-function) 'qmake-indent-line)
   (set (make-local-variable 'comment-start) "# ")
 )
 
 
-(defun qmake-ident-line()
-  "Trying to make a qmake identation"
-(interactive)
-(let ((savep (> (current-column) (current-indentation)))
-      (indent (condition-case nil (max (qmake-calculate-indentation) 0)
-                (error 0))))
-  (if savep
-      (save-excursion (indent-line-to indent))
-    (indent-line-to indent)
-    )
-  )
-)
+(defun qmake-indent-line ()
+  "Indent current line as QMake code."
+  (interactive)
+  (let ((savep (> (current-column) (current-indentation)))
+        (indent (qmake-calculate-indentation)))
+    (if savep
+        (save-excursion (indent-line-to indent))
+      (indent-line-to indent))))
+
+(defun qmake--looking-at-continuation ()
+  "Check if we're looking-at a line continuation, e.g. \"    mainwindow.h \\\"."
+  (looking-at ".*\\\\[[:space:]]*\\(#.*\\)?$"))
+
+(defun qmake--looking-at-continuation-start ()
+  "Check if we're looking-at the start of a line continuation."
+  (let (result)
+    (when (qmake--looking-at-continuation)
+      (previous-line)
+      (setf result (not (qmake--looking-at-continuation)))
+      (forward-line)
+      result)))
+
+(defun qmake--looking-at-empty-line-or-comment ()
+  (looking-at "[[:space:]]*\\(#.*\\)?$"))
+
+(defun qmake--looking-at-relevant-content ()
+  (not (qmake--looking-at-empty-line-or-comment)))
+
+(cl-defun qmake--indentation-of-last-continuation-start ()
+  (save-excursion
+    (let ((indentation 0))
+      (while (> (line-number-at-pos) 1)
+        (previous-line)
+        (beginning-of-line)
+        (setf indentation (current-indentation))
+        (if (qmake--looking-at-continuation-start)
+            (return-from qmake--indentation-of-last-continuation-start indentation))))))
+
+(cl-defun qmake--scan-backwards ()
+  (save-excursion
+    (let ((indentation 0))
+      (while (> (line-number-at-pos) 1)
+        (previous-line)
+        (beginning-of-line)
+        (setf indentation (current-indentation))
+        (if (looking-at ".*{[[:space:]]*\\(#.*\\)?$")
+            (return-from qmake--scan-backwards
+              (values 'opening-curly-bracket indentation)))
+        (when (qmake--looking-at-continuation)
+          (previous-line)
+          (if (not (qmake--looking-at-continuation))
+              (return-from qmake--scan-backwards
+                (values 'continuation-start indentation)))
+          (return-from qmake--scan-backwards
+            (values 'continuation indentation)))
+        (when (qmake--looking-at-relevant-content)
+          (previous-line)
+          (if (qmake--looking-at-continuation)
+              (return-from qmake--scan-backwards
+                (values 'continuation-end indentation)))
+          (return-from qmake--scan-backwards
+            (values 'relevant-content indentation)))))))
 
 (cl-defun qmake-calculate-indentation()
    "This function calculates the indentation for the current line"
-   (beginning-of-line)
-   (if (bobp)
+   (if (= (line-number-at-pos) 1)
        (return-from qmake-calculate-indentation 0))
-   (let ((prev-indent (get-prev-line-indent)))
-     (case (qmake--prev-line-type)
+   (multiple-value-bind (type indentation) (qmake--scan-backwards)
+     (save-excursion
+       (beginning-of-line)
+       (when (looking-at "[[:space:]]*}")
+         (decf indentation qmake-indent-width)
+         (if (< indentation 0)
+             (setf indentation 0))))
+     (case type
        ((opening-curly-bracket
-         scope-continuation)
-        (return-from qmake-calculate-indentation (+ prev-indent qmake-indent-width)))
-       ((scope-continuation-end)
-        (return-from qmake-calculate-indentation (- prev-indent qmake-indent-width))))
-
-     ;; If the current line is a } closing bracket,
-     ;; remove identation width
-     (if (looking-at "[ \t]*}")
-         (return-from qmake-calculate-indentation (- prev-indent qmake-indent-width)))
-
-     prev-indent))
-
-(defun get-prev-line-indent()
-  "Gets the previous line indentation"
-  (progn
-    (forward-line -1)
-    (let (
-          ( prev-indent (current-indentation))
-          )
-      (forward-line 1)
-      prev-indent)
-    )
-  )
-
-(defun qmake--looking-at-scope-continuation ()
-  "Check if we're looking-at a scope continuation, e.g. \"isEmpty(FOO): \\\"."
-  (looking-at ".*:[[:space:]]*\\\\[[:space:]]*\\(#.*\\)?$"))
-
-(cl-defun qmake--prev-line-type ()
-  "Check if the previous line opens a new block with \"{\" or \": \\\".
-Takes comments into account."
-  (interactive)
-  (save-excursion
-    (beginning-of-line)
-    (previous-line)
-    (if (looking-at ".*{[[:space:]]*\\(#.*\\)?$")
-        (return-from qmake--prev-line-type 'opening-curly-bracket))
-    (if (qmake--looking-at-scope-continuation)
-        (return-from qmake--prev-line-type 'scope-continuation))
-    (previous-line)
-    (if (qmake--looking-at-scope-continuation)
-        (return-from qmake--prev-line-type 'scope-continuation-end))))
+         continuation-start)
+        (return-from qmake-calculate-indentation (+ indentation qmake-indent-width)))
+       ((continuation-end)
+        (return-from qmake-calculate-indentation (qmake--indentation-of-last-continuation-start))))
+     indentation))
