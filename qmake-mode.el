@@ -473,13 +473,20 @@
    "This function calculates the indentation for the current line"
    (if (= (line-number-at-pos) 1)
        (return-from qmake-calculate-indentation 0))
-   (multiple-value-bind (type indentation) (qmake--scan-backwards)
-     (save-excursion
+
+   ;; Handle closing curly brace.
+   ;; Return the indentation of the matching opening curly brace.
+   ;; If there is no matching brace, indent like normal text.
+   (save-excursion
+     (ignore-errors
        (beginning-of-line)
        (when (looking-at "[[:space:]]*}")
-         (decf indentation qmake-indent-width)
-         (if (< indentation 0)
-             (setf indentation 0))))
+         (backward-up-list)
+         (return-from qmake-calculate-indentation (current-indentation)))))
+
+   ;; Scan backwards to the last "interesting" location, to find out
+   ;; in which context we're currently in.
+   (multiple-value-bind (type indentation) (qmake--scan-backwards)
      (case type
        ((opening-curly-bracket
          continuation-start)
