@@ -455,17 +455,19 @@
             (return-from qmake--scan-backwards
               (values 'opening-curly-bracket indentation)))
         (when (qmake--looking-at-continuation)
-          (previous-line)
-          (if (not (qmake--looking-at-continuation))
-              (return-from qmake--scan-backwards
-                (values 'continuation-start indentation)))
+          (when (> (line-number-at-pos) 1)
+            (previous-line)
+            (if (not (qmake--looking-at-continuation))
+                (return-from qmake--scan-backwards
+                  (values 'continuation-start indentation))))
           (return-from qmake--scan-backwards
             (values 'continuation indentation)))
         (when (qmake--looking-at-relevant-content)
-          (previous-line)
-          (if (qmake--looking-at-continuation)
-              (return-from qmake--scan-backwards
-                (values 'continuation-end indentation)))
+          (when (> (line-number-at-pos) 1)
+            (previous-line)
+            (if (qmake--looking-at-continuation)
+                (return-from qmake--scan-backwards
+                  (values 'continuation-end indentation))))
           (return-from qmake--scan-backwards
             (values 'relevant-content indentation)))))))
 
