@@ -421,12 +421,14 @@
 
 (defun qmake--looking-at-continuation-start ()
   "Check if we're looking-at the start of a line continuation."
-  (let (result)
-    (when (qmake--looking-at-continuation)
-      (previous-line)
-      (setf result (not (qmake--looking-at-continuation)))
-      (forward-line)
-      result)))
+  (when (qmake--looking-at-continuation)
+    (if (= (line-number-at-pos) 1)
+        t
+      (let (result)
+        (previous-line)
+        (setf result (not (qmake--looking-at-continuation)))
+        (forward-line)
+        result))))
 
 (defun qmake--looking-at-empty-line-or-comment ()
   (looking-at "[[:space:]]*\\(#.*\\)?$"))
@@ -455,6 +457,9 @@
             (return-from qmake--scan-backwards
               (values 'opening-curly-bracket indentation)))
         (when (qmake--looking-at-continuation)
+          (when (= (line-number-at-pos) 1)
+            (return-from qmake--scan-backwards
+              (values 'continuation-start indentation)))
           (when (> (line-number-at-pos) 1)
             (previous-line)
             (if (not (qmake--looking-at-continuation))
