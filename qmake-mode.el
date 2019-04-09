@@ -450,31 +450,35 @@
   (save-excursion
     (let ((indentation 0))
       (while (> (line-number-at-pos) 1)
-        (previous-line)
-        (beginning-of-line)
-        (setf indentation (current-indentation))
-        (if (looking-at ".*{[[:space:]]*\\(#.*\\)?$")
+        (catch 'continue
+          (previous-line)
+          (beginning-of-line)
+          (if (qmake--looking-at-empty-line-or-comment)
+              (throw 'continue nil))
+          (setf indentation (current-indentation))
+          (if (looking-at ".*{[[:space:]]*\\(#.*\\)?$")
+              (return-from qmake--scan-backwards
+                (values 'opening-curly-bracket indentation)))
+          (when (qmake--looking-at-continuation)
+            (when (= (line-number-at-pos) 1)
+              (return-from qmake--scan-backwards
+                (values 'continuation-start indentation)))
+            (when (> (line-number-at-pos) 1)
+              (previous-line)
+              (if (not (qmake--looking-at-continuation))
+                  (return-from qmake--scan-backwards
+                    (values 'continuation-start indentation))))
             (return-from qmake--scan-backwards
-              (values 'opening-curly-bracket indentation)))
-        (when (qmake--looking-at-continuation)
-          (when (= (line-number-at-pos) 1)
+              (values 'continuation indentation)))
+          (when (qmake--looking-at-relevant-content)
+            (when (> (line-number-at-pos) 1)
+              (previous-line)
+              (if (qmake--looking-at-continuation)
+                  (return-from qmake--scan-backwards
+                    (values 'continuation-end indentation))))
             (return-from qmake--scan-backwards
-              (values 'continuation-start indentation)))
-          (when (> (line-number-at-pos) 1)
-            (previous-line)
-            (if (not (qmake--looking-at-continuation))
-                (return-from qmake--scan-backwards
-                  (values 'continuation-start indentation))))
-          (return-from qmake--scan-backwards
-            (values 'continuation indentation)))
-        (when (qmake--looking-at-relevant-content)
-          (when (> (line-number-at-pos) 1)
-            (previous-line)
-            (if (qmake--looking-at-continuation)
-                (return-from qmake--scan-backwards
-                  (values 'continuation-end indentation))))
-          (return-from qmake--scan-backwards
-            (values 'relevant-content indentation)))))))
+              (values 'relevant-content indentation)))))))
+  (values 'unknown-content 0))
 
 (cl-defun qmake-calculate-indentation()
    "This function calculates the indentation for the current line"
