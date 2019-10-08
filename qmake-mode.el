@@ -57,6 +57,7 @@
 ;;
 ;;-------------------------------------------------------
 (provide 'qmake-mode)
+(require 'cl)
 
 (defvar qmake-indent-width 4
   "Indentation width for qmake-mode")
