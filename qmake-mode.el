@@ -1,73 +1,43 @@
-;; qmake.el -- qmake mode for emacs
+;; qmake-mode.el -- Support for qmake project files
 ;;
-;; Author: Carl Olsen
+;; Copyright (C) 2020 Joerg Bornemann
+;; Copyright (C) 2010 Carl Olsen
 ;;
-;; Copyright (c) 2010, carl-olsen
-;; All rights reserved.
-
-;; Redistribution and use in source and binary forms, with or without
-;; modification, are permitted provided that the following conditions
-;; are met:
+;; Author: Joerg Bornemann
+;;     Carl Olsen
+;; Keywords: languages
+;; Homepage: https://github.com/jobor/qmake-mode/
 ;;
-;;     * Redistributions of source code must retain the above
-;;       copyright notice, this list of conditions and the following
-;;       disclaimer.
 
-;;     * Redistributions in binary form must reproduce the above
-;;       copyright notice, this list of conditions and the following
-;;       disclaimer in the documentation and/or other materials
-;;       provided with the distribution.
+;; This file is not part of GNU Emacs.
 
-;;     * Neither the name of the CoCode nor the names of its
-;;       contributors may be used to endorse or promote products
-;;       derived from this software without specific prior written
-;;       permission.
-
-
-;; THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-;; "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-;; LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
-;; FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
-;; COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
-;; INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
-;; (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
-;; SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
-;; HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
-;; STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
-;; ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
-;; OF THE POSSIBILITY OF SUCH DAMAGE.
+;; This file is free software: you can redistribute it and/or modify
+;; it under the terms of the GNU General Public License as published by
+;; the Free Software Foundation, either version 3 of the License, or
+;; (at your option) any later version.
 ;;
+;; This program is distributed in the hope that it will be useful,
+;; but WITHOUT ANY WARRANTY; without even the implied warranty of
+;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;; GNU General Public License for more details.
 ;;
-;; Many thanks to the contributors:
-;; Stephan Creutz
+;; You should have received a copy of the GNU General Public License
+;; along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+;;; Commentary:
+;; This is a fork of Carl Olsen's qmake.el focusing on QMake's language.
+;; Every attempt of managing projects has been removed together with all UI elements.
+;; The syntax handling is a complete rewrite.
 
+;;; Code:
 
-;; -------------------------------------------------------
-;; provides qmake-mode for emacs
-;; qmake is Qt specific make file.
-;; Since there exists no other (what i know of)
-;; qmake mode for emacs, i decided to create one.
-;; If you think this looks messy, its because
-;; Im by know way any hacker when it comes to
-;; lisp and in particular elisp. If you find
-;; any errors or have any good suggestions,
-;; don't hesitate to give me a mail, or a
-;; diff.
-;;
-;;-------------------------------------------------------
 (provide 'qmake-mode)
 (require 'cl)
 
 (defvar qmake-indent-width 4
   "Indentation width for qmake-mode")
 
-;;-------------------------------------------------------
-;; There is no more user defined variables under this line.
-;;-------------------------------------------------------
-(defvar qmake-mode-hook nil)
-
-(defvar qmake-functions-variables
+(defvar qmake-functions
   '("absolute_path"
     "basename"
     "break"
@@ -155,8 +125,7 @@
     "win32"
     "write_file"
     "mac")
-  "Qmake function types"
-  )
+  "QMake functions")
 
 (defvar qmake-variables
   '("CONFIG"
@@ -371,13 +340,12 @@
     "_FILE_"
     "_PRO_FILE_"
     "_PRO_FILE_PWD_")
-  "Qmake variables"
-  )
+  "QMake variables")
 
-(defvar qmake-functions-regexp (regexp-opt qmake-functions-variables 'words))
+(defvar qmake-functions-regexp (regexp-opt qmake-functions 'words))
 (defvar qmake-variables-regexp (regexp-opt qmake-variables 'words))
 
-(setq qmake-functions-variables nil)
+(setq qmake-functions nil)
 (setq qmake-variables nil)
 
 (setq qmake-key-words
@@ -388,8 +356,7 @@
        )
       )
 
-
-(add-to-list 'auto-mode-alist '("\\.pr\\(o\\|i\\|f\\)\\'" . qmake-mode))
+(add-to-list 'auto-mode-alist '("\\.pr[oifl]\\'" . qmake-mode))
 
 (defvar qmake-mode-syntax-table
   (let ((table (make-syntax-table)))
@@ -399,15 +366,13 @@
     table)
   "Syntax table for qmake-mode.")
 
-(define-derived-mode qmake-mode fundamental-mode
+(define-derived-mode qmake-mode fundamental-mode "QMake"
   "Major mode for qmake project files"
   :syntax-table qmake-mode-syntax-table
   (setq font-lock-defaults '(qmake-key-words))
-  (setq mode-name "qmake")
   (set (make-local-variable 'indent-line-function) 'qmake-indent-line)
   (set (make-local-variable 'comment-start) "# ")
 )
-
 
 (defun qmake-indent-line ()
   "Indent current line as QMake code."
@@ -508,3 +473,5 @@
        ((continuation-end)
         (return-from qmake-calculate-indentation (qmake--indentation-of-last-continuation-start))))
      indentation))
+
+;;; qmake-mode.el ends here
