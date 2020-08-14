@@ -473,6 +473,21 @@
         (return-from qmake-calculate-indentation (qmake--indentation-of-last-continuation-start))))
      indentation))
 
+(defun qmake-ffap (arg)
+  "find-file-at-point helper function for qmake-mode.
+
+Add this function to your ffap-alist,
+and you can ffap on strings like
+  $$PWD/main.cpp
+
+Example:
+(add-to-list 'ffap-alist '(qmake-mode . qmake-ffap))
+"
+  (cond ((string-match "\\$?\\$PWD/\\(.*\\)" arg)
+         (concat "./" (match-string 1 arg)))
+        ((string-match "\\$?\\${PWD}/\\(.*\\)" arg)
+         (concat "./" (match-string 1 arg)))))
+
 (provide 'qmake-mode)
 
 ;;; qmake-mode.el ends here
