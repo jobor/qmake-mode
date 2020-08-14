@@ -365,7 +365,7 @@
     table)
   "Syntax table for qmake-mode.")
 
-(define-derived-mode qmake-mode fundamental-mode "QMake"
+(define-derived-mode qmake-mode prog-mode "QMake"
   "Major mode for qmake project files"
   :syntax-table qmake-mode-syntax-table
   (setq font-lock-defaults '(qmake-key-words))
