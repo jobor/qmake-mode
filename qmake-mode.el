@@ -31,7 +31,6 @@
 
 ;;; Code:
 
-(provide 'qmake-mode)
 (require 'cl)
 
 (defvar qmake-indent-width 4
@@ -473,5 +472,7 @@
        ((continuation-end)
         (return-from qmake-calculate-indentation (qmake--indentation-of-last-continuation-start))))
      indentation))
+
+(provide 'qmake-mode)
 
 ;;; qmake-mode.el ends here
