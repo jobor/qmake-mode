@@ -355,6 +355,7 @@
        )
       )
 
+;;;###autoload
 (add-to-list 'auto-mode-alist '("\\.pr[oifl]\\'" . qmake-mode))
 
 (defvar qmake-mode-syntax-table
@@ -365,6 +366,7 @@
     table)
   "Syntax table for qmake-mode.")
 
+;;;###autoload
 (define-derived-mode qmake-mode prog-mode "QMake"
   "Major mode for qmake project files"
   :syntax-table qmake-mode-syntax-table
