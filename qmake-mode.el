@@ -124,7 +124,7 @@
     "win32"
     "write_file"
     "mac")
-  "QMake functions")
+  "List of known QMake functions.")
 
 (defvar qmake-variables
   '("CONFIG"
@@ -339,7 +339,7 @@
     "_FILE_"
     "_PRO_FILE_"
     "_PRO_FILE_PWD_")
-  "QMake variables")
+  "List of known QMake variables.")
 
 (defvar qmake-functions-regexp (regexp-opt qmake-functions 'words))
 (defvar qmake-variables-regexp (regexp-opt qmake-variables 'words))
@@ -385,27 +385,30 @@
       (indent-line-to indent))))
 
 (defun qmake--looking-at-continuation ()
-  "Check if we're looking-at a line continuation, e.g. \"    mainwindow.h \\\"."
+  "Check if we're \"looking-at\" a line continuation, e.g. \"    mainwindow.h \\\"."
   (looking-at ".*\\\\[[:space:]]*\\(#.*\\)?$"))
 
 (defun qmake--looking-at-continuation-start ()
-  "Check if we're looking-at the start of a line continuation."
+  "Check if we're \"looking-at\" the start of a line continuation."
   (when (qmake--looking-at-continuation)
     (if (= (line-number-at-pos) 1)
         t
       (let (result)
-        (previous-line)
+        (forward-line -1)
         (setf result (not (qmake--looking-at-continuation)))
         (forward-line)
         result))))
 
 (defun qmake--looking-at-empty-line-or-comment ()
+  "Return non-nil if we're \"looking-at\" an empty line or comment."
   (looking-at "[[:space:]]*\\(#.*\\)?$"))
 
 (defun qmake--looking-at-relevant-content ()
+  "Return non-nil if we're \"looking-at\" content that's relevant code."
   (not (qmake--looking-at-empty-line-or-comment)))
 
 (cl-defun qmake--indentation-of-last-continuation-start ()
+  "Return the indentation amount of the last start of a line continuation."
   (save-excursion
     (let ((indentation 0))
       (while (> (line-number-at-pos) 1)
@@ -416,11 +419,12 @@
             (cl-return-from qmake--indentation-of-last-continuation-start indentation))))))
 
 (cl-defun qmake--scan-backwards ()
+  "Scan backwards from point and return current context and indentation amount."
   (save-excursion
     (let ((indentation 0))
       (while (> (line-number-at-pos) 1)
         (catch 'continue
-          (previous-line)
+          (forward-line -1)
           (beginning-of-line)
           (if (qmake--looking-at-empty-line-or-comment)
               (throw 'continue nil))
@@ -433,7 +437,7 @@
               (cl-return-from qmake--scan-backwards
                 (cl-values 'continuation-start indentation)))
             (when (> (line-number-at-pos) 1)
-              (previous-line)
+              (forward-line -1)
               (if (not (qmake--looking-at-continuation))
                   (cl-return-from qmake--scan-backwards
                     (cl-values 'continuation-start indentation))))
@@ -441,7 +445,7 @@
               (cl-values 'continuation indentation)))
           (when (qmake--looking-at-relevant-content)
             (when (> (line-number-at-pos) 1)
-              (previous-line)
+              (forward-line -1)
               (if (qmake--looking-at-continuation)
                   (cl-return-from qmake--scan-backwards
                     (cl-values 'continuation-end indentation))))
@@ -450,7 +454,7 @@
   (cl-values 'unknown-content 0))
 
 (cl-defun qmake-calculate-indentation()
-   "This function calculates the indentation for the current line"
+   "This function calculates the indentation for the current line."
    (if (= (line-number-at-pos) 1)
        (cl-return-from qmake-calculate-indentation 0))
 
@@ -476,15 +480,16 @@
      indentation))
 
 (defun qmake-ffap (arg)
-  "Helper function to connect find-file-at-point helper to qmake-mode.
+  "Helper function to connect \"find-file-at-point\" helper to qmake-mode.
 
 Add this function to your ffap-alist,
 and you can ffap on strings like
   $$PWD/main.cpp
 
 Example:
-(add-to-list 'ffap-alist '(qmake-mode . qmake-ffap))
-"
+\(add-to-list 'ffap-alist '(qmake-mode . qmake-ffap))
+
+For the description of ARG, see \"find-file-at-point\"."
   (cond ((string-match "\\$?\\$PWD/\\(.*\\)" arg)
          (concat "./" (match-string 1 arg)))
         ((string-match "\\$?\\${PWD}/\\(.*\\)" arg)
